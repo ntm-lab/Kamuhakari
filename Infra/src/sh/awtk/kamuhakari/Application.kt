@@ -1,59 +1,97 @@
 package sh.awtk.kamuhakari
 
+import com.auth0.jwt.algorithms.Algorithm
 import io.ktor.application.*
-import io.ktor.auth.Authentication
-import io.ktor.auth.authenticate
-import io.ktor.locations.KtorExperimentalLocationsAPI
-import io.ktor.locations.Location
-import io.ktor.locations.Locations
-import io.ktor.locations.get
-import io.ktor.routing.post
-import io.ktor.routing.routing
-import io.ktor.websocket.*
-import io.ktor.application.*
+import io.ktor.auth.*
+import io.ktor.auth.jwt.*
 import io.ktor.client.*
 import io.ktor.client.engine.okhttp.*
-import io.ktor.client.features.websocket.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.content.TextContent
-import io.ktor.http.*
-import io.ktor.http.content.*
-import io.ktor.request.*
+import io.ktor.locations.*
 import io.ktor.response.*
-import io.ktor.server.engine.*
-import io.ktor.server.netty.*
+import io.ktor.routing.*
 import io.ktor.util.*
-import io.ktor.utils.io.*
-import io.ktor.websocket.WebSockets
+import io.ktor.websocket.*
+import sh.awtk.kamuhakari.exposed.DatabaseFactory
+import sh.awtk.kamuhakari.jwt.JWTFactory
+import sh.awtk.kamuhakari.principal.LoginUser
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
 @KtorExperimentalLocationsAPI
+@KtorExperimentalAPI
 @Suppress("unused") // Referenced in application.conf
 fun Application.kamuhakari() {
 
     install(Locations)
-    install(WebSockets)
-    val client = HttpClient(OkHttp)
+    val client = HttpClient(OkHttp) {
+        install(WebSockets)
+
+    }
+    installAuthentication()
+
     routing {
 
         // ワンタイムURLの認証+トークン付与
         @Location("/join/{room}/{key}")
         data class JoinLocation(val room: String, val key: String)
-        get<JoinLocation> { }
+        get<JoinLocation> { query ->
+            call.respond(query.key)
+        }
 
         // ルームの作成
         post("/room") {
 
         }
+        authenticate{
+            // リバースプロキシの実装
+            route("/chat") {
 
-        authenticate {
-            webSocket("/") {
-                val frame = incoming.receive()
             }
         }
-
     }
 }
 
+@KtorExperimentalAPI
+private fun Application.setupDB() {
+    DatabaseFactory.also {
+        it.dbUrl = requireNotNull(environment.config.property("kamuhakari.db.jdbcUrl").getString())
+        it.dbUser = requireNotNull(environment.config.property("kamuhakari.db.username").getString())
+        it.dbPassword = requireNotNull(environment.config.property("kamuhakari.db.password").getString())
+        it.dbDriver = requireNotNull(environment.config.property("kamuhakari.db.driverClassName").getString())
+        it.maxPoolSize = requireNotNull(environment.config.property("kamuhakari.db.maximumPoolSize").getString().toInt())
+        it.isAutoCommit =
+                requireNotNull(environment.config.property("kamuhakari.db.isAutoCommit").getString().toBoolean())
+        it.transactionIsolation =
+                requireNotNull(environment.config.property("kamuhakari.db.transactionIsolation").getString())
+    }
+    DatabaseFactory.init()
+}
+
+@KtorExperimentalAPI
+private fun Application.setupJWT() {
+    JWTFactory.also {
+        it.algorithm = Algorithm.HMAC512(requireNotNull(environment.config.property("kamuhakari.jwt.secret").getString()))
+        it.issuer = requireNotNull(environment.config.property("kamuhakari.jwt.issuer").getString())
+        it.audience = requireNotNull(environment.config.property("kamuhakari.jwt.audience").getString())
+    }
+
+    JWTFactory.init()
+}
+
+@KtorExperimentalAPI
+private fun Application.installAuthentication() {
+    setupJWT()
+    val jwtRealm = requireNotNull(environment.config.property("kamuhakari.jwt.realm").getString())
+
+    install(Authentication) {
+        jwt {
+            realm = jwtRealm
+            verifier(JWTFactory.verifyer)
+            validate {
+                val userId = it.payload.getClaim("user_id").asLong()
+                val expiredAt = it.payload.expiresAt
+                LoginUser(userId, expiredAt)
+            }
+        }
+    }
+}
