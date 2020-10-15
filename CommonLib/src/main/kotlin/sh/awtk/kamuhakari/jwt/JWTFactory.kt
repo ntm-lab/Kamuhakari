@@ -4,8 +4,6 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.JWTVerifier
 import com.auth0.jwt.algorithms.Algorithm
 import org.joda.time.DateTime
-import org.joda.time.DateTimeZone
-import java.util.*
 
 object JWTFactory {
     lateinit var algorithm: Algorithm
@@ -17,10 +15,8 @@ object JWTFactory {
         this.verifyer = JWT.require(algorithm).withAudience(audience).withIssuer(issuer).build()
     }
 
-    fun newToken(userId: Long): String {
+    fun newToken(userId: Long, expires: DateTime): String {
         return JWT.create().withIssuer(issuer).withAudience(audience).withClaim("user_id", userId)
-                .withExpiresAt(calcExpires()).sign(algorithm)
+            .withExpiresAt(expires.toDate()).sign(algorithm)
     }
-
-    private fun calcExpires(): Date = DateTime.now(DateTimeZone.UTC).plusDays(7).toDate()
 }
