@@ -54,46 +54,6 @@ fun Application.kamuhakari() {
         post("/room") {
 
         }
-        authenticate {
-            val targetHost = requireNotNull(environment.config.property("kamuhakari.mediasoup.host").getString())
-            val targetPort =
-                requireNotNull(environment.config.property("kamuhakari.mediasoup.port").getString().toInt())
-            // リバースプロキシの実装
-            route("/") {
-                get("/") {
-                    validateToken(this.call)
-                    val headers = call.request.headers.toMap()
-                    call.respond(
-                        client.get(
-                            host = targetHost,
-                            path = call.request.uri,
-                            port = targetPort,
-                            block = {
-                                headers {
-                                    headers.map {
-                                        appendAll(it.key, it.value)
-                                    }
-                                }
-                            })
-                    )
-                }
-                webSocket("/") {
-                    validateToken(this.call)
-                    client.wss(
-                        method = HttpMethod.Get,
-                        host = targetHost,
-                        path = call.request.uri,
-                        port = targetPort
-                    ) {
-                        for (frame in incoming) {
-                            send(frame)
-                        }
-                        val frame = incoming.receive()
-                        outgoing.send(frame)
-                    }
-                }
-            }
-        }
     }
 }
 
