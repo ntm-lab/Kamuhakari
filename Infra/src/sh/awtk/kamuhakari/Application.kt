@@ -6,11 +6,19 @@ import io.ktor.auth.*
 import io.ktor.auth.jwt.*
 import io.ktor.client.*
 import io.ktor.client.engine.okhttp.*
+import io.ktor.client.features.websocket.*
+import io.ktor.client.request.*
+import io.ktor.features.*
+import io.ktor.http.*
 import io.ktor.locations.*
+import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
+import io.ktor.serialization.*
 import io.ktor.util.*
 import io.ktor.websocket.*
+import io.ktor.websocket.WebSockets
+import sh.awtk.kamuhakari.exception.AuthenticationException
 import sh.awtk.kamuhakari.exposed.DatabaseFactory
 import sh.awtk.kamuhakari.jwt.JWTFactory
 import sh.awtk.kamuhakari.principal.LoginUser
@@ -23,10 +31,14 @@ fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 fun Application.kamuhakari() {
 
     install(Locations)
+
     val client = HttpClient(OkHttp) {
         install(WebSockets)
-
     }
+    install(ContentNegotiation) {
+        json()
+    }
+
     installAuthentication()
 
     routing {
@@ -42,13 +54,58 @@ fun Application.kamuhakari() {
         post("/room") {
 
         }
-        authenticate{
+        authenticate {
+            val targetHost = requireNotNull(environment.config.property("kamuhakari.mediasoup.host").getString())
+            val targetPort =
+                requireNotNull(environment.config.property("kamuhakari.mediasoup.port").getString().toInt())
             // リバースプロキシの実装
-            route("/chat") {
-
+            route("/") {
+                get("/") {
+                    validateToken(this.call)
+                    val headers = call.request.headers.toMap()
+                    call.respond(
+                        client.get(
+                            host = targetHost,
+                            path = call.request.uri,
+                            port = targetPort,
+                            block = {
+                                headers {
+                                    headers.map {
+                                        appendAll(it.key, it.value)
+                                    }
+                                }
+                            })
+                    )
+                }
+                webSocket("/") {
+                    validateToken(this.call)
+                    client.wss(
+                        method = HttpMethod.Get,
+                        host = targetHost,
+                        path = call.request.uri,
+                        port = targetPort
+                    ) {
+                        for (frame in incoming) {
+                            send(frame)
+                        }
+                        val frame = incoming.receive()
+                        outgoing.send(frame)
+                    }
+                }
             }
         }
     }
+}
+
+private fun Application.validateToken(call: ApplicationCall) {
+    val user = call.principal<LoginUser>() ?: throw AuthenticationException(
+        "Token not found",
+        "アクセス情報を取得できませんでした．"
+    )
+    if (!call.request.queryParameters["roomId"].isNullOrBlank() && call.request.queryParameters["roomId"] != user.roomId) throw AuthenticationException(
+        "Invalid Token found",
+        "不正なトークンが検出されました．"
+    )
 }
 
 @KtorExperimentalAPI
@@ -58,11 +115,12 @@ private fun Application.setupDB() {
         it.dbUser = requireNotNull(environment.config.property("kamuhakari.db.username").getString())
         it.dbPassword = requireNotNull(environment.config.property("kamuhakari.db.password").getString())
         it.dbDriver = requireNotNull(environment.config.property("kamuhakari.db.driverClassName").getString())
-        it.maxPoolSize = requireNotNull(environment.config.property("kamuhakari.db.maximumPoolSize").getString().toInt())
+        it.maxPoolSize =
+            requireNotNull(environment.config.property("kamuhakari.db.maximumPoolSize").getString().toInt())
         it.isAutoCommit =
-                requireNotNull(environment.config.property("kamuhakari.db.isAutoCommit").getString().toBoolean())
+            requireNotNull(environment.config.property("kamuhakari.db.isAutoCommit").getString().toBoolean())
         it.transactionIsolation =
-                requireNotNull(environment.config.property("kamuhakari.db.transactionIsolation").getString())
+            requireNotNull(environment.config.property("kamuhakari.db.transactionIsolation").getString())
     }
     DatabaseFactory.init()
 }
@@ -70,7 +128,8 @@ private fun Application.setupDB() {
 @KtorExperimentalAPI
 private fun Application.setupJWT() {
     JWTFactory.also {
-        it.algorithm = Algorithm.HMAC512(requireNotNull(environment.config.property("kamuhakari.jwt.secret").getString()))
+        it.algorithm =
+            Algorithm.HMAC512(requireNotNull(environment.config.property("kamuhakari.jwt.secret").getString()))
         it.issuer = requireNotNull(environment.config.property("kamuhakari.jwt.issuer").getString())
         it.audience = requireNotNull(environment.config.property("kamuhakari.jwt.audience").getString())
     }
@@ -89,8 +148,9 @@ private fun Application.installAuthentication() {
             verifier(JWTFactory.verifyer)
             validate {
                 val userId = it.payload.getClaim("user_id").asLong()
+                val roomId = it.payload.getClaim("room_id").asString()
                 val expiredAt = it.payload.expiresAt
-                LoginUser(userId, expiredAt)
+                LoginUser(userId, roomId, expiredAt)
             }
         }
     }

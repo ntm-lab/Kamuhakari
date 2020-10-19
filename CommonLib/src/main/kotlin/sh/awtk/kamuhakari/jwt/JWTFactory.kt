@@ -15,8 +15,13 @@ object JWTFactory {
         this.verifyer = JWT.require(algorithm).withAudience(audience).withIssuer(issuer).build()
     }
 
-    fun newToken(userId: Long, expires: DateTime): String {
-        return JWT.create().withIssuer(issuer).withAudience(audience).withClaim("user_id", userId)
-            .withExpiresAt(expires.toDate()).sign(algorithm)
+    fun newToken(userId: Long, roomId: String, expires: DateTime): String {
+        return JWT.create()
+            .withIssuer(issuer)
+            .withAudience(audience)
+            .withClaim("user_id", userId)
+            .withClaim("room_id", roomId)
+            .withExpiresAt(expires.toDate())
+            .sign(algorithm)
     }
 }

@@ -11,7 +11,7 @@ class URLAuthenticateService(
 ) : IURLAuthenticateService {
     override fun authURL(key: String): TokenPair {
         val user = userRepository.findBy(OneTimeURL(key))
-        val aToken = JWTFactory.newToken(user.id.value, user.expireAt)
+        val aToken = JWTFactory.newToken(user.id.value, user.roomId.value, user.expireAt)
         return TokenPair(
             aToken,
             "not implemented"
