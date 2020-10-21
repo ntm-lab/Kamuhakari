@@ -9,6 +9,5 @@ data class User(
     val id: UserId,
     val roomId: RoomId,
     val oneTimeURL: OneTimeURL,
-    var isActive: Boolean = false,
     val expireAt: DateTime = DateTime.now().plusDays(7)
 )
