@@ -6,7 +6,7 @@ import sh.awtk.kamuhakari.vo.RoomId
 import sh.awtk.kamuhakari.vo.RoomRawId
 import sh.awtk.kamuhakari.vo.UserId
 
-data class Room(
+data class RoomDto(
     val id: RoomId,
     val rowId: RoomRawId,
     val owner: UserId,
