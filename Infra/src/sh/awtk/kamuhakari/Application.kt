@@ -4,16 +4,12 @@ import com.auth0.jwt.algorithms.Algorithm
 import io.ktor.application.*
 import io.ktor.auth.*
 import io.ktor.auth.jwt.*
-import io.ktor.client.*
-import io.ktor.client.engine.okhttp.*
 import io.ktor.features.*
 import io.ktor.locations.*
 import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.serialization.*
 import io.ktor.util.*
-import io.ktor.websocket.*
-import sh.awtk.kamuhakari.exception.AuthenticationException
 import sh.awtk.kamuhakari.exposed.DatabaseFactory
 import sh.awtk.kamuhakari.jwt.JWTFactory
 import sh.awtk.kamuhakari.principal.LoginUser
@@ -24,16 +20,12 @@ fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 @KtorExperimentalAPI
 @Suppress("unused") // Referenced in application.conf
 fun Application.kamuhakari() {
-
+    setupDB()
+    setupJWT()
     install(Locations)
-
-    val client = HttpClient(OkHttp) {
-        install(WebSockets)
-    }
     install(ContentNegotiation) {
         json()
     }
-
     installAuthentication()
 
     routing {
@@ -50,17 +42,6 @@ fun Application.kamuhakari() {
 
         }
     }
-}
-
-private fun Application.validateToken(call: ApplicationCall) {
-    val user = call.principal<LoginUser>() ?: throw AuthenticationException(
-        "Token not found",
-        "アクセス情報を取得できませんでした．"
-    )
-    if (!call.request.queryParameters["roomId"].isNullOrBlank() && call.request.queryParameters["roomId"] != user.roomId) throw AuthenticationException(
-        "Invalid Token found",
-        "不正なトークンが検出されました．"
-    )
 }
 
 @KtorExperimentalAPI
