@@ -9,5 +9,6 @@ data class UserDto(
     val id: UserId,
     val roomId: RoomId,
     val oneTimeURL: OneTimeURL,
-    val expireAt: DateTime = DateTime.now().plusDays(7)
+    var isActiveURL: Boolean = false,
+    var expireAt: DateTime = DateTime.now().plusDays(7)
 )

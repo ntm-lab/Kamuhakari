@@ -14,6 +14,7 @@ import sh.awtk.kamuhakari.vo.UserId
 object UserTable : LongIdTable("User") {
     var roomId: Column<EntityID<Long>> = reference("room_id", RoomTable)
     var oneTimeURL: Column<String> = varchar("one_time_url", 256)
+    var isActiveURL: Column<Boolean> = bool("is_active_url")
     var expiredAt: Column<DateTime> = datetime("expired_at")
 }
 
@@ -22,6 +23,7 @@ class UserEntity(id: EntityID<Long>) : LongEntity(id) {
 
     var roomId by RoomEntity referencedOn UserTable.roomId
     var oneTimeURL by UserTable.oneTimeURL
+    var isActiveURL by UserTable.isActiveURL
     var expiredAt by UserTable.expiredAt
 
     fun toDto(): UserDto {
@@ -29,6 +31,7 @@ class UserEntity(id: EntityID<Long>) : LongEntity(id) {
             UserId(id.value),
             RoomId(roomId.rowId),
             OneTimeURL(oneTimeURL),
+            isActiveURL,
             expiredAt
         )
     }
