@@ -29,7 +29,7 @@ class UserEntity(id: EntityID<Long>) : LongEntity(id) {
     fun toDto(): UserDto {
         return UserDto(
             UserId(id.value),
-            RoomId(roomId.rowId),
+            RoomId(roomId.rawId),
             OneTimeURL(oneTimeURL),
             isActiveURL,
             expiredAt
