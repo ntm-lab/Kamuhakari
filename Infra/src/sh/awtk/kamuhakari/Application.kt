@@ -20,6 +20,7 @@ import sh.awtk.kamuhakari.jwt.JWTFactory
 import sh.awtk.kamuhakari.modules.KoinModules
 import sh.awtk.kamuhakari.principal.LoginUser
 import sh.awtk.kamuhakari.viewmodel.RoomRequest
+import sh.awtk.kamuhakari.viewmodel.RoomResponse
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -44,11 +45,19 @@ fun Application.kamuhakari() {
 
         val roomService: IRoomService by inject()
         get<JoinLocation> { query ->
+            roomService.
         }
 
         // ルームの作成
         post("/room") {
-            call.respond(roomService.create(call.receive<RoomRequest>().toDto()).map { it.toRoomResponse() })
+            val users = roomService.create(call.receive<RoomRequest>().toDto())
+            val urls = users.map { it.oneTimeURL.value }
+            call.respond(
+                RoomResponse(
+                    invite_links = urls.subList(1, urls.size),
+                    access_token = users[0].roomId.value
+                )
+            )
         }
     }
 }

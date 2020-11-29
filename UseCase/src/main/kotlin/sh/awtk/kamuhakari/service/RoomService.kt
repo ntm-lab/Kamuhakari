@@ -14,8 +14,12 @@ class RoomService(
     private val userRepository: IUserRepository,
     private val roomRepository: IRoomRepository
 ) : IRoomService {
+
+    val RANDOM_MAX_LENGTH = 100
+    val RANDOM_MIN_LENGTH = 50
+
     override fun create(roomDto: RoomDto): List<UserDto> {
-        val id = ""// TODO:  UUID生成
+        val id = getRandomString((RANDOM_MIN_LENGTH..RANDOM_MAX_LENGTH).random())
         val userList: MutableList<UserDto> = mutableListOf()
         roomRepository.create(roomDto)
         for (i in 0..roomDto.numOfParticipants.value) {
@@ -24,7 +28,7 @@ class RoomService(
                     UserDto(
                         UserId(0),
                         RoomId(id),
-                        OneTimeURL(""),//todo: one time urlの生成
+                        OneTimeURL(getRandomString((RANDOM_MIN_LENGTH..RANDOM_MAX_LENGTH).random())),
                         true
                     )
                 )
@@ -32,4 +36,12 @@ class RoomService(
         }
         return userList
     }
+
+    private fun getRandomString(length: Int): String {
+        val allowedChars = ('A'..'Z') + ('a'..'z') + ('0'..'9') + "-_!*'()"
+        return (1..length)
+            .map { allowedChars.random() }
+            .joinToString("")
+    }
+
 }
