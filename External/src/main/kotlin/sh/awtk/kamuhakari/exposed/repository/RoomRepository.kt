@@ -19,10 +19,6 @@ class RoomRepository : IRoomRepository {
         RoomEntity.find { RoomTable.rawId eq roomId.value }.firstOrNull()?.toDto()
             ?: throw ObjectNotFoundException("room id ${roomId.value} is not found")
 
-    override fun findBy(userId: UserId): RoomDto =
-        RoomEntity.find { RoomTable.owner eq userId.value }.firstOrNull()?.toDto()
-            ?: throw ObjectNotFoundException("user ${userId.value} is not found")
-
     override fun update(room: RoomDto): RoomDto =
         RoomEntity.find { RoomTable.rawId eq room.id.value }.firstOrNull()?.also {
             it.rawId = room.id.value

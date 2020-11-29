@@ -12,7 +12,6 @@ import sh.awtk.kamuhakari.vo.UserId
 
 object RoomTable : LongIdTable("Room") {
     var rawId: Column<String> = varchar("row_id", 256).uniqueIndex()
-    var owner: Column<EntityID<Long>> = reference("owner", UserTable)
     var numOfParticipants: Column<Int> = integer("participants")
 }
 
@@ -20,7 +19,6 @@ class RoomEntity(id: EntityID<Long>) : LongEntity(id) {
     companion object : LongEntityClass<RoomEntity>(RoomTable)
 
     var rawId by RoomTable.rawId
-    var owner by UserEntity referencedOn RoomTable.owner
     var numOfParticipants by RoomTable.numOfParticipants
     fun toDto(): RoomDto {
         return RoomDto(

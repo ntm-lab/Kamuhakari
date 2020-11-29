@@ -7,7 +7,6 @@ import sh.awtk.kamuhakari.vo.UserId
 interface IRoomRepository {
     fun create(room: RoomDto): RoomDto
     fun findBy(roomId: RoomId): RoomDto
-    fun findBy(userId: UserId): RoomDto
     fun update(room: RoomDto): RoomDto
     fun close(room: RoomDto): RoomId
 }
