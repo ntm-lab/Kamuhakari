@@ -33,6 +33,7 @@ dependencies {
     implementation project(":CommonLib")
     implementation project(":External")
     implementation project(":UseCase")
+    implementation project(":Model")
 
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"

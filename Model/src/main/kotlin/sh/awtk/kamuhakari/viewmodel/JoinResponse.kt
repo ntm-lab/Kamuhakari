@@ -4,5 +4,5 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class JoinResponse(
-    val access_token: String
+    val room_id: String
 )

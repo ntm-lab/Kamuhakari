@@ -6,6 +6,7 @@ import io.ktor.auth.*
 import io.ktor.auth.jwt.*
 import io.ktor.features.*
 import io.ktor.locations.*
+import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.serialization.*
@@ -18,6 +19,7 @@ import sh.awtk.kamuhakari.interfaces.IRoomService
 import sh.awtk.kamuhakari.jwt.JWTFactory
 import sh.awtk.kamuhakari.modules.KoinModules
 import sh.awtk.kamuhakari.principal.LoginUser
+import sh.awtk.kamuhakari.viewmodel.RoomRequest
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -39,13 +41,14 @@ fun Application.kamuhakari() {
         // ワンタイムURLの認証+トークン付与
         @Location("/join/{room}/{key}")
         data class JoinLocation(val room: String, val key: String)
+
         val roomService: IRoomService by inject()
         get<JoinLocation> { query ->
         }
 
         // ルームの作成
         post("/room") {
-
+            call.respond(roomService.create(call.receive<RoomRequest>().toDto()).map { it.toRoomResponse() })
         }
     }
 }
@@ -97,7 +100,6 @@ private fun Application.installAuthentication() {
         }
     }
 }
-
 
 
 private fun Application.installKoin() {
