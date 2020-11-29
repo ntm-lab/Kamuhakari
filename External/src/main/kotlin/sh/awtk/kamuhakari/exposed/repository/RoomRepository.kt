@@ -12,8 +12,6 @@ import sh.awtk.kamuhakari.vo.UserId
 class RoomRepository : IRoomRepository {
     override fun create(room: RoomDto): RoomDto = RoomEntity.new {
         rawId = room.id.value
-        owner =
-            UserEntity.findById(room.owner.value) ?: throw ObjectNotFoundException("fail to find user")
         numOfParticipants = room.numOfParticipants.value
     }.toDto()
 
@@ -28,8 +26,6 @@ class RoomRepository : IRoomRepository {
     override fun update(room: RoomDto): RoomDto =
         RoomEntity.find { RoomTable.rawId eq room.id.value }.firstOrNull()?.also {
             it.rawId = room.id.value
-            it.owner = UserEntity.findById(room.owner.value)
-                ?: throw ObjectNotFoundException("user ${room.owner.value} is not found")
             it.numOfParticipants = room.numOfParticipants.value
         }?.toDto() ?: throw ObjectNotFoundException("room id ${room.id} is not found")
 

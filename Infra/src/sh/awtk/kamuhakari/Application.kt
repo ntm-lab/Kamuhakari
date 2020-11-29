@@ -10,8 +10,13 @@ import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.serialization.*
 import io.ktor.util.*
+import org.koin.ktor.ext.Koin
+import org.koin.ktor.ext.inject
+import org.koin.logger.slf4jLogger
 import sh.awtk.kamuhakari.exposed.DatabaseFactory
+import sh.awtk.kamuhakari.interfaces.IRoomService
 import sh.awtk.kamuhakari.jwt.JWTFactory
+import sh.awtk.kamuhakari.modules.KoinModules
 import sh.awtk.kamuhakari.principal.LoginUser
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
@@ -27,14 +32,15 @@ fun Application.kamuhakari() {
         json()
     }
     installAuthentication()
+    installKoin()
 
     routing {
 
         // ワンタイムURLの認証+トークン付与
         @Location("/join/{room}/{key}")
         data class JoinLocation(val room: String, val key: String)
+        val roomService: IRoomService by inject()
         get<JoinLocation> { query ->
-            call.respond(query.key)
         }
 
         // ルームの作成
@@ -89,5 +95,16 @@ private fun Application.installAuthentication() {
                 LoginUser(userId, roomId, expiredAt)
             }
         }
+    }
+}
+
+
+
+private fun Application.installKoin() {
+    install(Koin) {
+        slf4jLogger()
+        modules(
+            KoinModules.modules
+        )
     }
 }
