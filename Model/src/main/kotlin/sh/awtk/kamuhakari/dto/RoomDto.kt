@@ -7,7 +7,8 @@ import sh.awtk.kamuhakari.vo.RoomRawId
 import sh.awtk.kamuhakari.vo.UserId
 
 data class RoomDto(
-    val id: RoomId,
+    var id: RoomId,
     val numOfParticipants: NumOfParticipants,
-    val mailList: MailList = MailList(mutableListOf())
+    val mailList: MailList = MailList(mutableListOf()),
+    var dbId: Long = 0
 )

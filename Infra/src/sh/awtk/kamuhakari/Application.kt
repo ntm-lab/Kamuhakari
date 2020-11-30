@@ -5,20 +5,22 @@ import io.ktor.application.*
 import io.ktor.auth.*
 import io.ktor.auth.jwt.*
 import io.ktor.features.*
+import io.ktor.gson.*
 import io.ktor.locations.*
 import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
-import io.ktor.serialization.*
 import io.ktor.util.*
 import org.koin.ktor.ext.Koin
 import org.koin.ktor.ext.inject
 import org.koin.logger.slf4jLogger
 import sh.awtk.kamuhakari.exposed.DatabaseFactory
 import sh.awtk.kamuhakari.interfaces.IRoomService
+import sh.awtk.kamuhakari.interfaces.IURLAuthenticateService
 import sh.awtk.kamuhakari.jwt.JWTFactory
 import sh.awtk.kamuhakari.modules.KoinModules
 import sh.awtk.kamuhakari.principal.LoginUser
+import sh.awtk.kamuhakari.viewmodel.JoinResponse
 import sh.awtk.kamuhakari.viewmodel.RoomRequest
 import sh.awtk.kamuhakari.viewmodel.RoomResponse
 
@@ -32,29 +34,31 @@ fun Application.kamuhakari() {
     setupJWT()
     install(Locations)
     install(ContentNegotiation) {
-        json()
+        gson {}
     }
     installAuthentication()
     installKoin()
 
     routing {
+        val roomService: IRoomService by inject()
+        val urlService: IURLAuthenticateService by inject()
 
         // ワンタイムURLの認証+トークン付与
-        @Location("/join/{room}/{key}")
-        data class JoinLocation(val room: String, val key: String)
-
-        val roomService: IRoomService by inject()
+        @Location("/join/{key}")
+        data class JoinLocation(val key: String)
         get<JoinLocation> { query ->
-            roomService.
+            call.respond(
+                JoinResponse(urlService.authURL(key = query.key).access_token)
+            )
         }
 
         // ルームの作成
         post("/room") {
             val users = roomService.create(call.receive<RoomRequest>().toDto())
-            val urls = users.map { it.oneTimeURL.value }
+            val urls = users.map { "/join/" + it.oneTimeURL.value }
             call.respond(
                 RoomResponse(
-                    invite_links = urls.subList(1, urls.size),
+                    invite_links = urls,
                     access_token = users[0].roomId.value
                 )
             )

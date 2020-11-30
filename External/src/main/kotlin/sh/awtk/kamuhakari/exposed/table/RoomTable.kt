@@ -23,7 +23,8 @@ class RoomEntity(id: EntityID<Long>) : LongEntity(id) {
     fun toDto(): RoomDto {
         return RoomDto(
             RoomId(rawId),
-            NumOfParticipants(numOfParticipants)
+            NumOfParticipants(numOfParticipants),
+            dbId = id.value
         )
     }
 }

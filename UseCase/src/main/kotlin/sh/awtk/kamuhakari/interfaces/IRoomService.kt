@@ -4,5 +4,5 @@ import sh.awtk.kamuhakari.dto.RoomDto
 import sh.awtk.kamuhakari.dto.UserDto
 
 interface IRoomService {
-    fun create(roomDto: RoomDto): List<UserDto>
+    suspend fun create(roomDto: RoomDto): List<UserDto>
 }
