@@ -6,6 +6,7 @@ import io.ktor.auth.*
 import io.ktor.auth.jwt.*
 import io.ktor.features.*
 import io.ktor.gson.*
+import io.ktor.http.*
 import io.ktor.locations.*
 import io.ktor.request.*
 import io.ktor.response.*
@@ -37,6 +38,7 @@ fun Application.kamuhakari() {
         gson {}
     }
     installAuthentication()
+    installCORS()
     installKoin()
 
     routing {
@@ -121,5 +123,18 @@ private fun Application.installKoin() {
         modules(
             KoinModules.modules
         )
+    }
+}
+
+private fun Application.installCORS() {
+    install(CORS) {
+        method(HttpMethod.Get)
+        method(HttpMethod.Post)
+        method(HttpMethod.Put)
+        method(HttpMethod.Delete)
+        method(HttpMethod.Options)
+        anyHost()
+        allowCredentials = true
+        allowNonSimpleContentTypes = true
     }
 }

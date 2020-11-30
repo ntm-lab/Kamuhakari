@@ -22,11 +22,11 @@ class RoomService(
 
     override suspend fun create(roomDto: RoomDto): List<UserDto> {
         val id = getRandomString((RANDOM_MIN_LENGTH..RANDOM_MAX_LENGTH).random())
-        roomDto.id  = RoomId(id)
+        roomDto.id = RoomId(id)
         val userList: MutableList<UserDto> = mutableListOf()
         transaction.run {
             roomRepository.create(roomDto)
-            for (i in 0..roomDto.numOfParticipants.value) {
+            for (i in 0 until roomDto.numOfParticipants.value) {
                 userList.add(
                     userRepository.create(
                         UserDto(
